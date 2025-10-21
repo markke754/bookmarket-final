@@ -1,0 +1,873 @@
+/* 自定义样式文件 - 处理特殊元素样式 */
+
+/* 粒子效果增强 */
+.particles-canvas {
+  backdrop-filter: blur(1px);
+  pointer-events: all !important;
+  touch-action: none;
+}
+
+/* 白天模式粒子效果 */
+html[data-theme="light"] .particles-canvas {
+  background: radial-gradient(circle at center, rgba(200, 235, 255, 0.4) 0%, rgba(240, 249, 255, 0) 70%);
+}
+
+/* 黑夜模式文字增强 */
+html[data-theme="dark"] .hero-content h1 {
+  text-shadow: 0 0 20px rgba(70, 70, 150, 0.3), 0 0 10px rgba(50, 50, 120, 0.2);
+}
+
+html[data-theme="dark"] .hero-content p {
+  text-shadow: 0 0 15px rgba(70, 70, 150, 0.3), 0 0 8px rgba(50, 50, 120, 0.2);
+}
+
+/* 确保黑夜模式下公告区域与特色区域风格一致 */
+html[data-theme="dark"] .announcements-section::before {
+  background: rgba(20, 20, 35, 0.5);
+}
+
+html[data-theme="dark"] .announcement-card {
+  background: rgba(31, 91, 142, 0.08) !important;
+  border: 1px solid rgba(31, 91, 142, 0.15) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}
+
+html[data-theme="dark"] .announcement-card .announcement-header {
+  border-bottom: 1px solid rgba(31, 91, 142, 0.15) !important;
+  background: rgba(31, 91, 142, 0.05) !important;
+}
+
+html[data-theme="dark"] :deep(.el-carousel__arrow) {
+  background-color: rgba(31, 91, 142, 0.8) !important;
+}
+
+html[data-theme="dark"] :deep(.el-carousel__indicator.is-active .el-carousel__button) {
+  background-color: var(--primary-color) !important;
+}
+
+/* 统一黑夜模式背景色 */
+html[data-theme="dark"] body,
+html[data-theme="dark"] #app,
+html[data-theme="dark"] .app-container,
+html[data-theme="dark"] .main-content,
+html[data-theme="dark"] .page-container,
+html[data-theme="dark"] .content-container {
+  background-color: var(--bg-primary) !important;
+}
+
+html[data-theme="dark"] .el-card,
+html[data-theme="dark"] .el-dialog,
+html[data-theme="dark"] .el-dropdown-menu,
+html[data-theme="dark"] .el-drawer,
+html[data-theme="dark"] .el-popover,
+html[data-theme="dark"] .el-menu,
+html[data-theme="dark"] .el-date-picker,
+html[data-theme="dark"] .el-picker-panel,
+html[data-theme="dark"] .el-select-dropdown,
+html[data-theme="dark"] .book-card,
+html[data-theme="dark"] .info-card,
+html[data-theme="dark"] .order-card,
+html[data-theme="dark"] .settings-card,
+html[data-theme="dark"] .features-section,
+html[data-theme="dark"] .system-announcement {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 修复表格组件 */
+html[data-theme="dark"] .el-table {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-table th.el-table__cell {
+  background-color: var(--bg-darker) !important;
+}
+
+html[data-theme="dark"] .el-table tr {
+  background-color: var(--card-bg) !important;
+}
+
+html[data-theme="dark"] .el-table td.el-table__cell, 
+html[data-theme="dark"] .el-table th.el-table__cell.is-leaf {
+  border-bottom: 1px solid var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-table--border::after, 
+html[data-theme="dark"] .el-table--group::after, 
+html[data-theme="dark"] .el-table::before {
+  background-color: var(--border-darker) !important;
+}
+
+/* 修复下拉菜单和选择器 */
+html[data-theme="dark"] .el-select-dropdown__item,
+html[data-theme="dark"] .el-dropdown-menu__item {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-select-dropdown__item.hover, 
+html[data-theme="dark"] .el-select-dropdown__item:hover,
+html[data-theme="dark"] .el-dropdown-menu__item:hover {
+  background-color: var(--bg-darker) !important;
+}
+
+html[data-theme="dark"] .el-select-dropdown__item.selected {
+  color: var(--primary-color) !important;
+  background-color: var(--bg-darker) !important;
+}
+
+/* 简化的输入框样式修复 */
+.el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--border-color) inset !important;
+  border: none !important;
+}
+
+.el-input__inner,
+.el-textarea__inner {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] .el-input__wrapper {
+  background-color: transparent !important;
+  box-shadow: 0 0 0 1px var(--border-darker) inset !important;
+}
+
+html[data-theme="dark"] .el-input__inner,
+html[data-theme="dark"] .el-textarea__inner {
+  color: var(--text-primary) !important;
+}
+
+/* 全局输入框内元素透明背景 */
+.el-input__wrapper *,
+.el-textarea__wrapper * {
+  background-color: transparent !important;
+}
+
+/* 黑夜模式下确保按钮文字可见 */
+html[data-theme="dark"] .el-button {
+  color: var(--button-default-color) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-button--primary {
+  color: #ffffff !important;
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+html[data-theme="dark"] .el-button--primary:hover,
+html[data-theme="dark"] .el-button--primary:focus {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+}
+
+html[data-theme="dark"] .el-button--success {
+  color: #ffffff !important;
+  background-color: var(--success-color) !important;
+}
+
+html[data-theme="dark"] .el-button--danger {
+  color: #ffffff !important;
+  background-color: var(--danger-color) !important;
+}
+
+/* 修复分页组件 */
+html[data-theme="dark"] .el-pagination {
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-pagination button {
+  background-color: transparent !important;
+}
+
+html[data-theme="dark"] .el-pagination .el-pagination__total,
+html[data-theme="dark"] .el-pagination .el-pagination__sizes,
+html[data-theme="dark"] .el-pagination .el-pagination__jump {
+  color: var(--text-secondary) !important;
+}
+
+/* 修复标签和徽章 */
+html[data-theme="dark"] .el-tag {
+  border-color: var(--border-darker) !important;
+}
+
+/* 修复tabs组件 */
+html[data-theme="dark"] .el-tabs__nav-wrap::after {
+  background-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-tabs__item {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .el-tabs__item.is-active {
+  color: var(--primary-color) !important;
+}
+
+/* 修复嵌套在其他容器中的输入框 */
+html[data-theme="dark"] [class*="container"] .el-input *,
+html[data-theme="dark"] [class*="section"] .el-input *,
+html[data-theme="dark"] [class*="content"] .el-input *,
+html[data-theme="dark"] [class*="filter"] .el-input *,
+html[data-theme="dark"] [id="app"] .el-input *,
+html[data-theme="dark"] .main-content .el-input * {
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+/* 修复日期选择器 */
+html[data-theme="dark"] .el-date-table td {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-date-table td.next-month, 
+html[data-theme="dark"] .el-date-table td.prev-month {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .el-date-table td.today {
+  color: var(--primary-color) !important;
+}
+
+html[data-theme="dark"] .el-date-table td.current:not(.disabled) span {
+  background-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+/* 修复各种具体实例 */
+html[data-theme="dark"] #app div div span,
+html[data-theme="dark"] #app div div span span,
+html[data-theme="dark"] .search-filter-container div span,
+html[data-theme="dark"] .search-filter-container div span span,
+html[data-theme="dark"] .el-input div span,
+html[data-theme="dark"] .el-input div span span {
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+/* 修复Form组件 */
+html[data-theme="dark"] .el-form-item__label {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-form-item__error {
+  color: var(--danger-color) !important;
+}
+
+/* 修复描述列表 */
+html[data-theme="dark"] .el-descriptions__label {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .el-descriptions__content {
+  color: var(--text-primary) !important;
+}
+
+/* 修复抽屉和弹窗内容 */
+html[data-theme="dark"] .el-drawer__header,
+html[data-theme="dark"] .el-dialog__header {
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-dialog__footer,
+html[data-theme="dark"] .el-drawer__footer {
+  border-top: 1px solid var(--border-darker) !important;
+}
+
+/* 修复图像背景 */
+html[data-theme="dark"] .image-error,
+html[data-theme="dark"] .book-cover-placeholder,
+html[data-theme="dark"] .image-placeholder {
+  background: linear-gradient(135deg, #1e2129 0%, #2c3e50 100%) !important;
+}
+
+/* 修复滚动条 */
+html[data-theme="dark"] ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--border-darker);
+  border-radius: 3px;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}
+
+/* 管理员页面黑夜模式样式 */
+html[data-theme="dark"] .admin-container {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .admin-container .main-card {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-color) !important;
+}
+
+html[data-theme="dark"] .admin-container .card-header {
+  border-bottom-color: var(--border-darker) !important;
+  background-color: var(--bg-darker) !important;
+}
+
+html[data-theme="dark"] .admin-container .card-header-title {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .admin-tabs {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .admin-tabs .el-tabs__header {
+  background-color: var(--bg-darker) !important;
+  border-bottom-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .admin-tabs .el-tabs__content {
+  background-color: var(--card-bg) !important;
+}
+
+html[data-theme="dark"] .tab-content {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .section-title {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .section-desc {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .admin-register-form,
+html[data-theme="dark"] .announcement-form {
+  background-color: var(--bg-lighter) !important;
+  border-color: var(--border-darker) !important;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+html[data-theme="dark"] .table-toolbar {
+  background-color: var(--bg-lighter) !important;
+  border-color: var(--border-darker) !important;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+}
+
+html[data-theme="dark"] .search-input,
+html[data-theme="dark"] .role-filter,
+html[data-theme="dark"] .status-filter,
+html[data-theme="dark"] .category-filter {
+  background-color: transparent !important;
+}
+
+html[data-theme="dark"] .data-table {
+  background-color: var(--card-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .announcement-list {
+  background-color: var(--bg-lighter) !important;
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 20px;
+}
+
+html[data-theme="dark"] .list-title {
+  color: var(--text-primary) !important;
+  border-bottom: 1px solid var(--border-darker) !important;
+  padding-bottom: 10px;
+}
+
+html[data-theme="dark"] .el-timeline-item__tail {
+  border-left-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-timeline-item__node {
+  background-color: var(--primary-color) !important;
+}
+
+html[data-theme="dark"] .el-timeline-item__content {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-timeline-item__timestamp {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .empty-state {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .user-cell,
+html[data-theme="dark"] .price,
+html[data-theme="dark"] .order-id {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .admin-name {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-timeline {
+  color: var(--text-primary) !important;
+}
+
+/* 修复深层嵌套的白色背景问题 */
+html[data-theme="dark"] [style*="background-color: white"],
+html[data-theme="dark"] [style*="background-color: #fff"],
+html[data-theme="dark"] [style*="background-color: #ffffff"],
+html[data-theme="dark"] [style*="background: white"],
+html[data-theme="dark"] [style*="background: #fff"],
+html[data-theme="dark"] [style*="background: #ffffff"] {
+  background-color: var(--card-bg) !important;
+}
+
+html[data-theme="dark"] [style*="color: black"],
+html[data-theme="dark"] [style*="color: #000"],
+html[data-theme="dark"] [style*="color: #000000"] {
+  color: var(--text-primary) !important;
+}
+
+/* 管理员特定组件样式 */
+html[data-theme="dark"] .announcement-card {
+  background-color: var(--bg-lighter) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .announcement-header {
+  background-color: var(--bg-darker) !important;
+  border-bottom-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .announcement-content {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-tabs--border-card {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-tabs--border-card > .el-tabs__header {
+  background-color: var(--bg-darker) !important;
+  border-bottom-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
+  background-color: var(--card-bg) !important;
+  border-right-color: var(--border-darker) !important;
+  border-left-color: var(--border-darker) !important;
+}
+
+/* 增强表格行的黑夜模式样式 */
+html[data-theme="dark"] .el-table__body tr {
+  background-color: var(--card-bg) !important;
+}
+
+html[data-theme="dark"] .el-table__body tr:hover > td.el-table__cell {
+  background-color: var(--bg-darker) !important;
+}
+
+html[data-theme="dark"] .el-table__body tr.current-row > td.el-table__cell {
+  background-color: rgba(64, 158, 255, 0.1) !important;
+}
+
+html[data-theme="dark"] .el-table__row--striped td.el-table__cell {
+  background-color: var(--bg-lighter) !important;
+}
+
+/* 修复表格内部各种元素 */
+html[data-theme="dark"] .el-table__expand-icon {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-table__header-wrapper,
+html[data-theme="dark"] .el-table__body-wrapper,
+html[data-theme="dark"] .el-table__footer-wrapper {
+  background-color: var(--card-bg) !important;
+}
+
+/* 确保所有内嵌表格元素也正确应用样式 */
+html[data-theme="dark"] .el-table .cell {
+  color: var(--text-primary) !important;
+}
+
+/* 修复图表和数据可视化组件 */
+html[data-theme="dark"] .el-progress-bar__outer {
+  background-color: var(--bg-darker) !important;
+}
+
+html[data-theme="dark"] .el-progress__text {
+  color: var(--text-primary) !important;
+}
+
+/* 确保任何内联样式的表格行也应用黑夜模式 */
+html[data-theme="dark"] tr[style*="background-color: white"],
+html[data-theme="dark"] tr[style*="background-color: #fff"],
+html[data-theme="dark"] tr[style*="background-color: #ffffff"],
+html[data-theme="dark"] tr[style*="background: white"],
+html[data-theme="dark"] tr[style*="background: #fff"],
+html[data-theme="dark"] tr[style*="background: #ffffff"] {
+  background-color: var(--card-bg) !important;
+}
+
+html[data-theme="dark"] td[style*="background-color: white"],
+html[data-theme="dark"] td[style*="background-color: #fff"],
+html[data-theme="dark"] td[style*="background-color: #ffffff"],
+html[data-theme="dark"] td[style*="background: white"],
+html[data-theme="dark"] td[style*="background: #fff"],
+html[data-theme="dark"] td[style*="background: #ffffff"] {
+  background-color: var(--card-bg) !important;
+}
+
+/* 针对Element Plus的特定表格组件增强 */
+html[data-theme="dark"] .el-table .el-table__cell {
+  background-color: var(--card-bg) !important;
+}
+
+html[data-theme="dark"] .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background-color: var(--bg-lighter) !important;
+}
+
+/* 确保fixed列也正确应用样式 */
+html[data-theme="dark"] .el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell {
+  background-color: var(--bg-darker) !important;
+}
+
+html[data-theme="dark"] .el-table__fixed, 
+html[data-theme="dark"] .el-table__fixed-right {
+  background-color: var(--card-bg) !important;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+html[data-theme="dark"] .el-table__fixed-right::before, 
+html[data-theme="dark"] .el-table__fixed::before {
+  background-color: var(--border-darker) !important;
+}
+
+/* 修复主题切换组件的相关样式 */
+html[data-theme="dark"] .el-tooltip__popper {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-darker) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-tooltip__popper .popper__arrow,
+html[data-theme="dark"] .el-tooltip__popper .popper__arrow::after {
+  border-bottom-color: var(--card-bg) !important;
+}
+
+html[data-theme="dark"] .el-popper.is-light {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-darker) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-popper.is-light .el-popper__arrow::before {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] [effect="light"].el-tooltip__popper,
+html[data-theme="dark"] [effect="light"].el-popper {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-darker) !important;
+  color: var(--text-primary) !important;
+}
+
+/* 强制覆盖所有主题切换相关的元素 */
+html[data-theme="dark"] .theme-toggle,
+html[data-theme="dark"] .theme-switch,
+html[data-theme="dark"] .el-tooltip__trigger,
+html[data-theme="dark"] [data-popper-placement] {
+  background-color: transparent !important;
+}
+
+html[data-theme="dark"] .el-popper {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-popper__arrow::before {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-darker) !important;
+}
+
+/* 卖家中心支付设置页面黑夜模式样式 */
+html[data-theme="dark"] .seller-payment-container {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .payment-settings {
+  background-color: var(--card-bg) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .payment-code-placeholder {
+  background-color: var(--bg-darker) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .payment-code-placeholder:hover {
+  border-color: var(--primary-color) !important;
+}
+
+html[data-theme="dark"] .payment-code-placeholder .el-icon {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .payment-tips {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .el-upload {
+  background-color: transparent !important;
+}
+
+html[data-theme="dark"] .el-upload-dragger {
+  background-color: var(--bg-darker) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-upload-list__item {
+  background-color: var(--bg-darker) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-upload-list__item-name {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-upload-list__item .el-icon {
+  color: var(--text-secondary) !important;
+}
+
+/* 修复 el-image 相关样式 */
+html[data-theme="dark"] .el-image {
+  background-color: transparent !important;
+}
+
+html[data-theme="dark"] .el-image-viewer__wrapper {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+html[data-theme="dark"] .el-image-viewer__close {
+  color: #fff !important;
+}
+
+html[data-theme="dark"] .el-image__error, 
+html[data-theme="dark"] .el-image__placeholder {
+  background-color: var(--bg-darker) !important;
+  color: var(--text-secondary) !important;
+}
+
+/* 修复支付码图片预览的样式 */
+html[data-theme="dark"] .payment-code-preview {
+  border: 1px solid var(--border-darker) !important;
+  background-color: var(--bg-darker) !important;
+}
+
+/* 修复弹出框和确认框的黑夜模式样式 */
+html[data-theme="dark"] .el-message-box {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-message-box__header {
+  background-color: var(--bg-darker) !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-message-box__title {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-message-box__content {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-message-box__message p {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-message-box__headerbtn .el-message-box__close {
+  color: var(--text-secondary) !important;
+}
+
+html[data-theme="dark"] .el-message-box__btns {
+  background-color: var(--card-bg) !important;
+  border-top-color: var(--border-darker) !important;
+}
+
+/* 修复普通Message的样式 */
+html[data-theme="dark"] .el-message {
+  background-color: var(--card-bg) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-message--info {
+  background-color: rgba(50, 50, 70, 0.9) !important;
+}
+
+html[data-theme="dark"] .el-message--success {
+  background-color: rgba(40, 70, 40, 0.9) !important;
+}
+
+html[data-theme="dark"] .el-message--warning {
+  background-color: rgba(70, 60, 30, 0.9) !important;
+}
+
+html[data-theme="dark"] .el-message--error {
+  background-color: rgba(70, 40, 40, 0.9) !important;
+}
+
+html[data-theme="dark"] .el-message__content {
+  color: var(--text-primary) !important;
+}
+
+/* 修复遮罩层和对话框背景 */
+html[data-theme="dark"] .el-overlay {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+html[data-theme="dark"] .v-modal {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* 确保任何内嵌标签也正确应用样式 */
+html[data-theme="dark"] .el-message-box .el-message-box__message p,
+html[data-theme="dark"] .el-message-box span,
+html[data-theme="dark"] .el-message-box div {
+  color: var(--text-primary) !important;
+}
+
+/* 细化弹出框样式，确保背景色统一 */
+html[data-theme="dark"] .el-message-box,
+html[data-theme="dark"] .el-message-box__wrapper,
+html[data-theme="dark"] .el-message-box__container {
+  background-color: var(--card-bg) !important;
+}
+
+html[data-theme="dark"] .el-message-box__header,
+html[data-theme="dark"] .el-message-box__title,
+html[data-theme="dark"] .el-message-box__headerbtn {
+  background-color: var(--card-bg) !important;
+  border-bottom-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-message-box__content,
+html[data-theme="dark"] .el-message-box__container,
+html[data-theme="dark"] .el-message-box__message,
+html[data-theme="dark"] .el-message-box__status {
+  background-color: var(--card-bg) !important;
+}
+
+html[data-theme="dark"] .el-message-box__btns,
+html[data-theme="dark"] .el-message-box__btns button {
+  background-color: var(--card-bg) !important;
+}
+
+/* 修复确定和取消按钮的样式 */
+html[data-theme="dark"] .el-message-box__btns button.el-button {
+  border: 1px solid var(--border-darker) !important;
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .el-message-box__btns button.el-button--primary {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] .el-message-box__btns button.el-button--primary span,
+html[data-theme="dark"] .el-message-box__btns button.el-button--primary i {
+  color: #ffffff !important;
+  background-color: transparent !important;
+}
+
+html[data-theme="dark"] .el-message-box__btns button.el-button--default:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border-color: var(--border-darker) !important;
+}
+
+html[data-theme="dark"] .el-message-box__btns button.el-button--primary:hover {
+  background-color: var(--primary-hover) !important;
+  border-color: var(--primary-hover) !important;
+}
+
+/* 确保确定按钮内部所有元素统一样式 */
+html[data-theme="dark"] .el-message-box__btns button.el-button--primary * {
+  background-color: transparent !important;
+  color: #ffffff !important;
+}
+
+/* 确保任何可能嵌套的内容元素 */
+html[data-theme="dark"] .el-message-box * {
+  background-color: var(--card-bg) !important;
+}
+
+/* 有选择地排除一些不应该受到背景色影响的元素 */
+html[data-theme="dark"] .el-message-box .el-icon,
+html[data-theme="dark"] .el-message-box .el-message-box__status,
+html[data-theme="dark"] .el-message-box .el-message-box__close {
+  background-color: initial !important;
+}
+
+/* 确保按钮元素的背景色正确 */
+html[data-theme="dark"] .el-message-box .el-button {
+  background-color: initial !important;
+}
+
+html[data-theme="dark"] .el-message-box .el-button--primary {
+  background-color: var(--primary-color) !important;
+}
+
+/* 修复购物车在黑夜模式下的样式问题 */
+html[data-theme="dark"] .shopping-cart .cart-header h3 {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .cart-item .item-title {
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+}
+
+html[data-theme="dark"] .cart-item .item-price {
+  color: #f0b252 !important; /* 亮一点的橙色，在暗色背景上更醒目 */
+}
+
+html[data-theme="dark"] .cart-total span {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .cart-total .total-price {
+  color: #f0b252 !important;
+  font-weight: bold !important;
+}
+
+html[data-theme="dark"] .item-quantity {
+  color: var(--text-primary) !important;
+}
+
+html[data-theme="dark"] .order-item span {
+  color: var(--text-primary) !important;
+} 

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>图书商城</title>
+    <script src="/Syunew6.js"></script>
+    <style>
+      /* 预加载主题样式，避免闪烁 */
+      html[data-theme="dark"] {
+        background-color: #1a1a1a;
+        color-scheme: dark;
+      }
+      html[data-theme="dark"] body {
+        background-color: #1a1a1a;
+        color: #f0f0f0;
+      }
+      html[data-theme="light"] {
+        background-color: #ffffff;
+      }
+      
+      /* 预设首页背景图片样式 */
+      html[data-theme="light"] .hero-section .hero-image > div {
+        background-image: url('/src/assets/白天.jpg');
+      }
+      html[data-theme="dark"] .hero-section .hero-image > div {
+        background-image: url('/src/assets/黑夜.png');
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
