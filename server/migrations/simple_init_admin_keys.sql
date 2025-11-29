@@ -1,0 +1,13 @@
+-- Simple initialization script for admin keys
+
+INSERT INTO admin_keys (admin_id, pub_key_x, pub_key_y, pin_code)
+SELECT 
+    id, 
+    'D5548C7825CBB56150A3506CD57464AF8A1AE0519DFAF3C58221DC810CAF28DD',
+    '921073768FE3D59CE54E79A49445CF73FED23086537027264D168946D479533E',
+    '$2b$10$E5vT2qBn9iWfQJQZ1JQ5qO3W0Zz8f7XqKzL5X5Q5J5X5Q5J5X5Q5J'
+FROM users
+WHERE role = 'admin'
+AND id NOT IN (SELECT admin_id FROM admin_keys);
+
+SELECT 'Done' as status;

@@ -31,6 +31,29 @@
               <el-form-item label="邮箱">
                 <el-input v-model="newAdmin.email" placeholder="请输入邮箱" prefix-icon="el-icon-message" />
               </el-form-item>
+
+              <!-- 添加密钥设置部分 -->
+              <el-divider>密钥设置（可选）</el-divider>
+              <div class="key-setting-section">
+                <el-form-item label="公钥X分量">
+                  <el-input v-model="newAdmin.pubKeyX" placeholder="请输入公钥X分量" />
+                </el-form-item>
+                
+                <el-form-item label="公钥Y分量">
+                  <el-input v-model="newAdmin.pubKeyY" placeholder="请输入公钥Y分量" />
+                </el-form-item>
+                
+                <el-form-item label="PIN码">
+                  <el-input v-model="newAdmin.pinCode" type="password" placeholder="请输入PIN码" show-password />
+                </el-form-item>
+                
+                <el-alert
+                  title="安全提示"
+                  type="info"
+                  description="设置密钥后，该管理员登录时将需要USB Key验证。如不设置，将使用默认验证方式。"
+                  :closable="false"
+                />
+              </div>
               
               <el-form-item>
                 <el-button type="primary" native-type="submit" :loading="registerLoading" class="register-button">
@@ -310,7 +333,10 @@ const logoutLoading = ref(false);
 const newAdmin = ref({
   username: '',
   password: '',
-  email: ''
+  email: '',
+  pubKeyX: '', // 新增公钥X分量
+  pubKeyY: '', // 新增公钥Y分量
+  pinCode: ''  // 新增PIN码
 });
 
 // 标签页激活名称
@@ -460,6 +486,13 @@ async function handleAdminRegister() {
     return;
   }
   
+  // 密钥信息验证：如果填写了部分密钥信息，则必须填写完整
+  if ((newAdmin.value.pubKeyX || newAdmin.value.pubKeyY || newAdmin.value.pinCode) && 
+      (!newAdmin.value.pubKeyX || !newAdmin.value.pubKeyY || !newAdmin.value.pinCode)) {
+    ElMessage.warning('如果要设置密钥，请填写完整的公钥X分量、公钥Y分量和PIN码');
+    return;
+  }
+  
   registerLoading.value = true;
   try {
     const response = await axios.post('http://localhost:3000/api/admin/register', {
@@ -470,11 +503,15 @@ async function handleAdminRegister() {
     });
     
     if (response.data.success) {
-      ElMessage.success('管理员账号创建成功');
+      ElMessage.success('管理员账号创建成功' + (response.data.hasKeyInfo ? '，并已设置密钥' : ''));
+      // 重置表单
       newAdmin.value = {
         username: '',
         password: '',
-        email: ''
+        email: '',
+        pubKeyX: '',
+        pubKeyY: '',
+        pinCode: ''
       };
       // 刷新用户列表
       const usersRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/admin/users`, {
@@ -855,5 +892,115 @@ async function publishAnnouncement() {
     width: 100%;
     margin-bottom: 10px;
   }
+}
+
+/* 添加密钥设置部分的样式 */
+.key-setting-section {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 8px;
+  border-left: 4px solid #409eff;
+}
+
+.key-setting-section .el-alert {
+  margin-top: 15px;
+}
+
+/* 其他样式保持不变 */
+.table-toolbar {
+  display: flex;
+  margin-bottom: 20px;
+  gap: 16px;
+  align-items: center;
+}
+
+.search-input {
+  max-width: 300px;
+}
+
+.role-filter,
+.status-filter,
+.category-filter {
+  width: 140px;
+}
+
+.data-table {
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-icon {
+  color: #409EFF;
+}
+
+.price {
+  color: #f56c6c;
+  font-weight: 600;
+}
+
+.order-id {
+  font-weight: 600;
+  color: #606266;
+}
+
+.empty-state {
+  margin: 40px 0;
+}
+
+.announcement-form {
+  max-width: 800px;
+  margin: 20px 0;
+  padding: 24px;
+  background-color: #f9fafc;
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.publish-button {
+  padding: 10px 20px;
+  font-weight: 500;
+}
+
+.announcement-list {
+  margin-top: 30px;
+}
+
+.list-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.announcement-card {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 15px;
+}
+
+.announcement-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-name {
+  font-weight: 600;
+  color: #409EFF;
+}
+
+.announcement-content {
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
 }
 </style>

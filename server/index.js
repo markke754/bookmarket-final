@@ -19,6 +19,7 @@ import adminRoutes from './routes/admin.js';
 // 引入中间件
 import { authenticateToken } from './middleware/auth.js';
 import { notFoundHandler, errorHandler } from './middleware/error.js';
+import verifyTimestamp from './middleware/timestamp.js';
 import logger from './utils/logger.js';
 
 dotenv.config();
@@ -145,12 +146,12 @@ app.get('/api/check-static-path', (req, res) => {
   });
 });
 
-// API路由
-app.use('/api', authRoutes);
-app.use('/api/books', booksRoutes);
-app.use('/api/orders', ordersRoutes);
-app.use('/api/seller', sellerRoutes);
-app.use('/api/admin', adminRoutes);
+// API路由 - 除了认证和健康检查外，其他API都需要时间戳验证
+app.use('/api', authRoutes); // 登录注册路由不需要时间戳验证
+app.use('/api/books', verifyTimestamp, booksRoutes);
+app.use('/api/orders', verifyTimestamp, ordersRoutes);
+app.use('/api/seller', verifyTimestamp, sellerRoutes);
+app.use('/api/admin', verifyTimestamp, adminRoutes);
 
 // 添加图书封面上传路由
 app.post('/api/books/upload', authenticateToken, upload.single('file'), (req, res) => {

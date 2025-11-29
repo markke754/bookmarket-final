@@ -15,7 +15,6 @@
             v-model="username" 
             placeholder="请输入用户名" 
             prefix-icon="el-icon-user" 
-            :disabled="role === 'admin' && !usbKeyVerified"
           />
         </el-form-item>
         
@@ -26,7 +25,6 @@
             placeholder="请输入密码" 
             prefix-icon="el-icon-lock" 
             show-password 
-            :disabled="role === 'admin' && !usbKeyVerified"
           />
         </el-form-item>
         
@@ -39,12 +37,17 @@
         </el-form-item>
 
         <!-- 管理员专用USB Key认证区域 -->
-        <div v-if="role === 'admin'" class="admin-usb-key-section">
+        <div v-if="role === 'admin' && showUsbKeyAuth" class="admin-usb-key-section">
           <el-divider>USB Key认证（管理员专用）</el-divider>
           <UsbKeyAuth 
             @auth-success="handleAuthSuccess"
             @auth-failure="handleAuthFailure"
             @status-change="handleStatusChange"
+            :username="username"
+            :temp-token="tempToken"
+            :server-pub-key-x="serverPubKeyX"
+            :server-pub-key-y="serverPubKeyY"
+            :has-key-info="hasKeyInfo"
           />
         </div>
 
@@ -53,10 +56,9 @@
             type="primary" 
             native-type="submit" 
             :loading="loading" 
-            :disabled="role === 'admin' && !usbKeyVerified" 
             class="login-button"
           >
-            {{ role === 'admin' && !usbKeyVerified ? '请先验证USB Key' : '登录' }}
+            {{ loginButtonText }}
           </el-button>
           <div class="register-link">
             <span>还没有账号？</span>
@@ -66,8 +68,8 @@
       </el-form>
     </el-card>
     
-    <!-- 管理员锁定提示遮罩 -->
-    <div v-if="role === 'admin' && !usbKeyVerified && !isConnected" class="lock-overlay">
+    <!-- 管理员锁定提示遮罩 - 修改为只有在用户尝试登录后才显示 -->
+    <div v-if="role === 'admin' && !usbKeyVerified && !isConnected && showUsbKeyAuth" class="lock-overlay">
       <div class="lock-message">
         <el-icon class="lock-icon-large"><Lock /></el-icon>
         <h3>管理员登录需要USB Key</h3>
@@ -94,10 +96,111 @@ const password = ref('');
 const role = ref('');
 const usbKeyVerified = ref(false);
 const isConnected = ref(false);
+const showUsbKeyAuth = ref(false);
+const tempToken = ref('');
+const currentAdminId = ref(null);
 // 使用本地loading状态而非store中的状态
 const loading = ref(false);
+// 添加authStatus变量定义
+const authStatus = ref('未连接');
+// 添加服务器返回的公钥信息
+const serverPubKeyX = ref('');
+const serverPubKeyY = ref('');
+const hasKeyInfo = ref(false);
 
-// 添加生命周期钩子，在组件挂载时输出日志，便于调试
+// 计算登录按钮文本
+const loginButtonText = computed(() => {
+  if (loading.value) return '登录中...';
+  if (role.value === 'admin' && showUsbKeyAuth.value && !usbKeyVerified.value) return '请完成USB Key验证';
+  return '登录';
+});
+
+// 处理登录 - 函数定义已移至文件底部
+
+// 处理USB Key认证成功
+async function handleAuthSuccess(data) {
+  console.log('USB Key认证成功:', data);
+  
+  try {
+    // 调用store的verifyUsbKey方法完成第二阶段认证
+    const result = await authStore.verifyUsbKey(data);
+    console.log('verifyUsbKey 返回结果:', result);
+    
+    if (result && result.success) {
+      usbKeyVerified.value = true;
+      ElMessage.success('USB Key验证成功，正在跳转...');
+      showUsbKeyAuth.value = false; // 隐藏USB Key认证区域
+      // 手动重置表单字段，而不是调用不存在的resetForm函数
+      username.value = '';
+      password.value = '';
+      
+      console.log('准备跳转到管理员页面...');
+      console.log('当前用户:', authStore.user);
+      console.log('当前token:', authStore.token);
+      
+      // 使用setTimeout确保状态已更新
+      setTimeout(() => {
+        router.push('/admin');
+      }, 100);
+    } else {
+      ElMessage.error(result?.error || 'USB Key验证失败');
+      authStatus.value = '验证失败';
+      usbKeyVerified.value = false;
+    }
+  } catch (error) {
+    console.error('USB Key验证失败:', error);
+    ElMessage.error('USB Key验证过程中发生错误');
+  }
+}
+
+// 完成管理员登录
+async function completeAdminLogin(authData) {
+  try {
+    // 这里authData应该已经包含了所有需要的信息
+    // 如果需要，我们可以在这里做额外的处理
+    
+    // 保存认证信息到store
+    authStore.token = authData.token;
+    authStore.user = authData.user;
+    
+    localStorage.setItem('token', authData.token);
+    localStorage.setItem('user', JSON.stringify(authData.user));
+    
+    // 配置全局axios默认头部
+    axios.defaults.headers.common['Authorization'] = `Bearer ${authData.token}`;
+    
+    // 跳转到管理员页面
+    router.push('/admin');
+  } catch (error) {
+    console.error('完成管理员登录失败:', error);
+    ElMessage.error('登录失败，请重试');
+  }
+}
+
+// 处理USB Key认证失败
+function handleAuthFailure(error) {
+  usbKeyVerified.value = false;
+  console.error('USB Key验证失败:', error);
+  ElMessage.error('USB Key验证失败: ' + (error.message || '未知错误'));
+  authStatus.value = '验证失败';
+  // 重置认证状态，让用户可以重新尝试
+  authStore.resetAuthState();
+  showUsbKeyAuth.value = false;
+}
+
+// 处理USB Key状态变化
+function handleStatusChange(status) {
+  isConnected.value = status.isConnected;
+  if (status.isVerified !== undefined) {
+    usbKeyVerified.value = status.isVerified;
+    authStatus.value = status.isVerified ? '已验证' : '已连接';
+  } else if (status.isConnected) {
+    authStatus.value = '已连接';
+  } else {
+    authStatus.value = '未连接';
+  }
+  console.log('USB Key状态变化:', status);
+}
 onMounted(() => {
   console.log('登录页面已加载');
   console.log('当前认证状态:', authStore.isAuthenticated);
@@ -110,29 +213,7 @@ onMounted(() => {
   }
 });
 
-// 处理USB Key认证成功
-function handleAuthSuccess() {
-  ElMessage.success('USB Key认证成功');
-  usbKeyVerified.value = true;
-  isConnected.value = true;
-}
-
-// 处理USB Key认证失败
-function handleAuthFailure(error) {
-  console.error('USB Key认证失败:', error);
-  // 不显示错误提示，避免频繁弹窗
-  // ElMessage.error('USB Key认证失败，请检查设备连接');
-  usbKeyVerified.value = false;
-}
-
-// 处理USB Key状态变化
-function handleStatusChange(status) {
-  isConnected.value = status.isConnected;
-  if (status.isVerified) {
-    usbKeyVerified.value = true;
-  }
-  console.log('USB Key状态变化:', status);
-}
+// 额外的函数定义 - 保持一个版本的函数定义
 
 // 监听角色变化，重置认证状态
 watch(() => role.value, (newRole, oldRole) => {
@@ -149,21 +230,41 @@ async function handleLogin() {
     return;
   }
   
-  // 管理员必须通过USB Key认证
-  if (role.value === 'admin' && !usbKeyVerified.value) {
-    ElMessage.warning('管理员登录必须先通过USB Key认证');
-    return;
-  }
-  
   // 设置本地loading状态
   loading.value = true;
   
   try {
-    // 为管理员登录添加usbKeyVerified标志
-    const success = await authStore.login(username.value, password.value, role.value, role.value === 'admin' ? { usbKeyVerified: true } : {});
-    if (success) {
-      ElMessage.success('登录成功');
-      router.push(`/${role.value}`);
+    // 对于管理员，需要先进行第一阶段登录（验证用户名密码）
+    if (role.value === 'admin') {
+      const result = await authStore.firstStageLogin(username.value, password.value, role.value);
+      
+      if (result && result.requiresUsbKey) {
+        // 需要USB Key验证，保存临时token和公钥信息
+        tempToken.value = result.tempToken;
+        hasKeyInfo.value = result.hasKeyInfo || false;
+        
+        // 如果后端返回了公钥，使用后端的公钥
+        if (result.pubKeyX && result.pubKeyY) {
+          serverPubKeyX.value = result.pubKeyX;
+          serverPubKeyY.value = result.pubKeyY;
+        }
+        
+        // 显示USB Key认证区域
+        showUsbKeyAuth.value = true;
+        ElMessage.info('请插入USB Key并完成验证以继续管理员登录');
+      } else if (result && result.success === false) {
+        ElMessage.error(result.error || '登录失败');
+      }
+    } else {
+      // 非管理员直接登录
+      const result = await authStore.firstStageLogin(username.value, password.value, role.value);
+      
+      if (result && result.success !== false) {
+        ElMessage.success('登录成功');
+        router.push(`/${role.value}`);
+      } else {
+        ElMessage.error(result?.error || '登录失败');
+      }
     }
   } catch (error) {
     console.error('登录处理错误:', error);

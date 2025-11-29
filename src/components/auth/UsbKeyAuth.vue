@@ -6,12 +6,29 @@
         <i v-else-if="isConnected && !isVerified" class="connecting-icon">🔄</i>
         <i v-else class="unlock-icon">✅</i>
       </div>
-      <div class="status-text">
-        <h3 v-if="!isConnected">请插入USB Key</h3>
-        <h3 v-else-if="isConnected && !isVerified">正在验证USB Key...</h3>
-        <h3 v-else>USB Key验证成功</h3>
-        <p v-if="!isConnected" class="instruction">插入管理员USB Key以解锁登录界面</p>
+        <div class="status-text">
+          <h3 v-if="!isConnected">请插入USB Key</h3>
+          <h3 v-else-if="isConnected && !isVerified && hasKeyInfo && !pinCode">请输入PIN码</h3>
+          <h3 v-else-if="isConnected && !isVerified && !hasKeyInfo">正在使用默认配置验证...</h3>
+          <h3 v-else-if="isConnected && !isVerified">正在验证USB Key...</h3>
+          <h3 v-else>USB Key验证成功</h3>
+          <p v-if="!isConnected" class="instruction">插入管理员USB Key以解锁登录界面</p>
+          <p v-if="isConnected && !isVerified && !hasKeyInfo" class="instruction">使用默认用户名(bookstore)和PIN码(123)</p>
+        </div>
       </div>
+      
+      <!-- PIN码输入区域 - 只在有密钥信息时显示 -->
+      <div v-if="isConnected && !isVerified && hasKeyInfo" class="pin-input-section">
+      <label for="pinCode">请输入PIN码：</label>
+      <input 
+        id="pinCode" 
+        v-model="pinCode"
+        type="password" 
+        placeholder="输入管理员PIN码"
+        @keyup.enter="startVerification"
+        class="pin-input"
+      />
+      <button @click="startVerification" class="verify-button">验证</button>
     </div>
     
     <div id="result" class="result-panel">
@@ -23,86 +40,106 @@
 </template>
 
 <script>
-// 假设Syunew6.js将通过CDN或在主HTML中引入
-// 如果需要在Vue项目中导入，可能需要使用webpack的expose-loader或其他方式处理
-
 export default {
   name: 'UsbKeyAuth',
+  props: {
+    username: {
+      type: String,
+      default: ''
+    },
+    tempToken: {
+      type: String,
+      default: ''
+    },
+    serverPubKeyX: {
+      type: String,
+      default: ''
+    },
+    serverPubKeyY: {
+      type: String,
+      default: ''
+    },
+    hasKeyInfo: {
+      type: Boolean,
+      default: false
+    }
+  },
   emits: ['auth-success', 'auth-failure', 'status-change'],
   data() {
     return {
-      // 公钥信息和设备路径
       pubKeyX: '',
       pubKeyY: '',
       devicePath: '',
       softKey: null,
-      userName: 'bookstore',
-      FIXED_PIN: '123',
-      // UI状态
+      pinCode: '',
       logs: [],
       isLoading: false,
       hasPublicKey: false,
       isConnected: false,
       isVerified: false,
-      // 轮询状态
+      authStatus: 'idle',
       pollingInterval: null,
       pollingAttempts: 0,
-      maxPollingAttempts: 3,
-      // 预存储公钥
-      storedPubKeyX: 'D5548C7825CBB56150A3506CD57464AF8A1AE0519DFAF3C58221DC810CAF28DD',
-      storedPubKeyY: '921073768FE3D59CE54E79A49445CF73FED23086537027264D168946D479533E'
+      maxPollingAttempts: 20,
+      defaultPubKeyX: 'D5548C7825CBB56150A3506CD57464AF8A1AE0519DFAF3C58221DC810CAF28DD',
+      defaultPubKeyY: '921073768FE3D59CE54E79A49445CF73FED23086537027264D168946D479533E',
+      defaultUsername: 'bookstore',
+      defaultPinCode: '123'
     }
   },
   mounted() {
-    // 组件挂载后立即开始检测USB Key
     this.startDetection();
   },
   beforeUnmount() {
-    // 组件卸载前清理轮询
     this.stopDetection();
   },
   methods: {
-    // 发送状态变化事件
     sendStatusChange() {
       this.$emit('status-change', {
         isConnected: this.isConnected,
         isVerified: this.isVerified,
-        hasPublicKey: this.hasPublicKey
+        hasPublicKey: this.hasPublicKey,
+        authStatus: this.authStatus
       });
     },
 
-    // 显示日志信息
     log(message, isError = false) {
       this.logs.push({ message, isError });
       console.log(message);
-      // 自动滚动到底部
       this.$nextTick(() => {
         const resultDiv = document.getElementById('result');
         if (resultDiv) {
           resultDiv.scrollTop = resultDiv.scrollHeight;
         }
       });
-      // 保持日志数量在合理范围内
       if (this.logs.length > 50) {
         this.logs.shift();
       }
     },
 
-    // 清除日志
     clearLog() {
       this.logs = [];
     },
 
-    // 开始检测USB Key
     startDetection() {
       this.log('开始自动检测USB Key设备...');
-      // 设置轮询，每1秒检测一次
       this.pollingInterval = setInterval(() => {
         this.detectAndVerify();
-      }, 1000);
+        this.pollingAttempts++;
+        
+        if (this.pollingAttempts >= this.maxPollingAttempts) {
+          this.stopDetection();
+          if (!this.isConnected) {
+            this.log('未检测到USB Key设备，请手动插入设备。', true);
+            setTimeout(() => {
+              this.pollingAttempts = 0;
+              this.startDetection();
+            }, 5000);
+          }
+        }
+      }, 2000);
     },
 
-    // 停止检测
     stopDetection() {
       if (this.pollingInterval) {
         clearInterval(this.pollingInterval);
@@ -110,51 +147,43 @@ export default {
       }
     },
 
-    // 检测并验证USB Key
     async detectAndVerify() {
-      // 如果已经验证成功，停止检测
       if (this.isVerified) {
         this.stopDetection();
         return;
       }
 
       try {
-        // 检测设备连接
         await this.detectDevice();
-        
-        // 如果设备已连接，尝试验证
         if (this.isConnected && !this.isVerified) {
-          await this.verifyDevice();
+          // 只显示提示信息，不自动触发验证
+          this.verifyDevice();
         }
       } catch (error) {
         this.log(`检测过程错误: ${error.message}`, true);
-        // 如果连续失败多次，重置连接状态
         this.pollingAttempts++;
         if (this.pollingAttempts >= this.maxPollingAttempts) {
           this.isConnected = false;
           this.hasPublicKey = false;
           this.softKey = null;
           this.pollingAttempts = 0;
+          this.authStatus = 'idle';
           this.sendStatusChange();
         }
       }
     },
 
-    // 检测USB Key设备
     async detectDevice() {
-      // 确保SoftKey6W在全局作用域可用
       if (!window.SoftKey6W) {
         this.log('未找到USB Key驱动，请确保已正确加载Syunew6.js', true);
         return;
       }
 
       try {
-        // 创建SoftKey6W实例（如果不存在）
         if (!this.softKey) {
           this.softKey = new window.SoftKey6W();
         }
 
-        // 查找USB Key设备，从端口0开始查找
         const port = await this.softKey.FindPort(0);
         
         if (port === null || port === undefined || port === false) {
@@ -168,47 +197,79 @@ export default {
           return;
         }
 
-        // 如果是新连接的设备
         if (!this.isConnected || this.devicePath !== port) {
           this.log(`成功找到设备，端口号: ${port}`);
           this.devicePath = port;
           this.isConnected = true;
           this.pollingAttempts = 0;
+          this.authStatus = 'connecting';
           
-          // 直接使用预存储公钥，无需读取USB Key中的公钥
-          this.log('设备已连接，直接使用预存储公钥...');
-          
-          // 获取设备基本信息
           try {
             const version = await this.softKey.GetVersion(port);
             this.log(`设备版本: ${version}`);
           } catch (e) {
-            this.log('获取设备版本失败，将继续使用预存储公钥', true);
+            this.log('获取设备版本失败，将继续使用公钥', true);
           }
           
-          // 保存预存储公钥和设备信息
-          this.pubKeyX = this.storedPubKeyX;
-          this.pubKeyY = this.storedPubKeyY;
-          this.hasPublicKey = true;
+          // 根据后端返回的信息选择使用数据库公钥或默认公钥
+          if (this.hasKeyInfo && this.serverPubKeyX && this.serverPubKeyY) {
+            this.log('设备已连接，使用数据库中存储的公钥...');
+            this.pubKeyX = this.serverPubKeyX;
+            this.pubKeyY = this.serverPubKeyY;
+            this.log(`公钥X: ${this.pubKeyX.substring(0, 20)}...`);
+            this.log(`公钥Y: ${this.pubKeyY.substring(0, 20)}...`);
+          } else {
+            this.log('设备已连接，使用默认公钥...');
+            this.pubKeyX = this.defaultPubKeyX;
+            this.pubKeyY = this.defaultPubKeyY;
+            this.log(`使用默认公钥和默认用户名：${this.defaultUsername}，请使用默认PIN码：${this.defaultPinCode}`);
+          }
           
-          this.log('已设置预存储公钥，准备进行随机数认证');
+          this.hasPublicKey = true;
+          this.log('公钥设置完成，准备进行随机数认证');
           this.sendStatusChange();
         }
       } catch (error) {
         this.log(`设备检测错误: ${error.message}`, true);
+        this.authStatus = 'error';
+        this.sendStatusChange();
         throw error;
       }
     },
 
-    // 验证设备
-    async verifyDevice() {
-      if (this.hasPublicKey && !this.isVerified) {
+    startVerification() {
+      if (this.isConnected && this.pinCode) {
         this.log('开始验证USB Key...');
-        await this.startRandomAuth();
+        this.authStatus = 'verifying';
+        this.sendStatusChange();
+        this.startRandomAuth();
+      } else {
+        this.log('请先输入PIN码', true);
       }
     },
-    
-    // 生成指定长度的随机十六进制字符串
+
+    async verifyDevice() {
+      // 设备连接后的处理
+      if (this.hasPublicKey && !this.isVerified) {
+        if (this.hasKeyInfo) {
+          // 有密钥信息，等待用户输入PIN码
+          if (!this.pinCode) {
+            this.log('设备已连接，请输入PIN码进行验证');
+            this.authStatus = 'waiting-pin';
+            this.sendStatusChange();
+          }
+        } else {
+          // 没有密钥信息，自动使用默认PIN码并开始验证
+          this.log(`使用默认配置自动验证：用户名=${this.defaultUsername}, PIN码=${this.defaultPinCode}`);
+          this.pinCode = this.defaultPinCode;
+          this.authStatus = 'verifying';
+          this.sendStatusChange();
+          // 自动开始验证
+          await this.startRandomAuth();
+        }
+      }
+    },
+
     generateRandomHexString(length) {
       const chars = '0123456789ABCDEF';
       let result = '';
@@ -217,132 +278,129 @@ export default {
       }
       return result;
     },
-    
-    // 随机数认证流程
+
     async startRandomAuth() {
       try {
-        // 验证必要的信息是否已准备好
         if (!this.softKey || !this.devicePath || !this.pubKeyX || !this.pubKeyY) {
           this.log('请先读取公钥信息', true);
+          this.authStatus = 'error';
+          this.sendStatusChange();
           return;
         }
         
         this.isLoading = true;
+        this.authStatus = 'verifying';
         this.log('\n========== 开始随机数认证 ==========', false);
         
-        // 1. 生成随机数
-        const randomNum = this.generateRandomHexString(16); // 生成16字节的随机数
+        const randomNum = this.generateRandomHexString(16);
         this.log(`\n1. 生成随机数: ${randomNum}`, false);
-        this.log(`随机数长度: ${randomNum.length} 字符`, false);
-        
-        // 2. 使用USB Key对随机数进行签名
-        this.log('\n2. 使用USB Key对随机数进行签名...', false);
-        this.log(`使用PIN码: ${this.FIXED_PIN}`, false);
         
         try {
-          // 确保使用bookstore用户的密钥对进行签名
-          this.log(`使用USB Key中已存在的bookstore用户密钥对进行签名...`, false);
-          
-          // 直接使用预存储公钥，不再读取设备中的公钥
-            this.log('直接使用预存储公钥进行签名验证...', false);
-            this.log(`预存储公钥X前20字符: ${this.pubKeyX.substring(0, 20)}...`, false);
-            this.log(`预存储公钥Y前20字符: ${this.pubKeyY.substring(0, 20)}...`, false);
-          
-          // 直接调用_YtSign进行签名，按照参考实现的参数顺序
-          const signature = await this.softKey.SendCmdAndWait(false, this.softKey._YtSign, randomNum, this.FIXED_PIN, this.devicePath);
-          
-          this.log(`签名结果: ${signature}`, false);
-          this.log(`签名长度: ${signature.length} 字符`, false);
-          
-          // 3. 使用预存储的公钥验证签名
-          this.log('\n3. 使用预存储在电脑中的公钥验证签名...', false);
-          
-          try {
-            const startTime = performance.now();
+            // 根据是否有密钥信息选择用户名：有密钥用真实用户名，无密钥用默认用户名
+            const keyUsername = this.hasKeyInfo ? this.username : this.defaultUsername;
+            this.log(`使用用户名: ${keyUsername} 进行签名`, false);
             
-            // 直接使用预存储的公钥进行验证
-            const storedPubKeyX = this.pubKeyX; // 从实例变量获取预存储的公钥X
-            const storedPubKeyY = this.pubKeyY; // 从实例变量获取预存储的公钥Y
-            
-            // 记录使用的预存储公钥信息
-            this.log(`使用预存储公钥进行验证`, false);
-            this.log(`预存储公钥X: ${storedPubKeyX.substring(0, 20)}...`, false);
-            this.log(`预存储公钥Y: ${storedPubKeyY.substring(0, 20)}...`, false);
-            
-            // 注意：修改参数顺序，尝试不同的调用方式
-            this.log('尝试调用验证函数...', false);
-            let verifyResult;
+            // 使用选定的用户名和用户输入的PIN码进行签名
+            const signature = await this.softKey.SendCmdAndWait(false, this.softKey._YtSign, keyUsername, randomNum, this.pinCode, this.devicePath);
+            this.log(`签名结果: ${signature}`, false);
             
             try {
-              // 尝试不同的参数顺序 - 方式1（使用预存储公钥）
-              verifyResult = await this.softKey.SendCmdAndWait(false, this.softKey._YtVerfiy, 
-                  this.userName, randomNum, storedPubKeyX, storedPubKeyY, signature, this.devicePath);
-              this.log('验证函数调用成功（方式1）', false);
-            } catch (firstTryError) {
-              this.log(`第一次验证调用失败: ${firstTryError.message}`, true);
-              this.log('尝试不同的参数顺序...', false);
-              
-              // 尝试不同的参数顺序 - 方式2（使用预存储公钥）
+              let verifyResult;
               try {
+                // 使用对应的用户名进行验证
                 verifyResult = await this.softKey.SendCmdAndWait(false, this.softKey._YtVerfiy, 
-                    randomNum, signature, storedPubKeyX, storedPubKeyY, this.devicePath);
-                this.log('第二次验证调用成功（方式2）', false);
-              } catch (secondTryError) {
-                this.log(`第二次验证调用失败: ${secondTryError.message}`, true);
-                this.log('尝试直接使用_YtVerfiy方法...', false);
-                
-                // 尝试直接调用_YtVerfiy方法（使用预存储公钥）
+                    keyUsername, randomNum, this.pubKeyX, this.pubKeyY, signature, this.devicePath);
+              } catch (e) {
                 try {
-                  // @ts-ignore - 假设_YtVerfiy是一个可直接调用的方法
-                  verifyResult = await this.softKey._YtVerfiy(randomNum, storedPubKeyX, storedPubKeyY, signature, this.devicePath);
-                  this.log('直接调用_YtVerfiy成功', false);
-                } catch (directCallError) {
-                  this.log(`直接调用验证方法失败: ${directCallError.message}`, true);
-                  throw new Error('所有验证调用方式都失败');
+                  verifyResult = await this.softKey.SendCmdAndWait(false, this.softKey._YtVerfiy, 
+                      randomNum, signature, this.pubKeyX, this.pubKeyY, this.devicePath);
+                } catch (e) {
+                  verifyResult = await this.softKey._YtVerfiy(randomNum, this.pubKeyX, this.pubKeyY, signature, this.devicePath);
                 }
               }
-            }
             
-            const endTime = performance.now();
-            
-            this.log(`验证耗时: ${(endTime - startTime).toFixed(2)}ms`, false);
-            this.log(`验证返回值类型: ${typeof verifyResult}`, false);
-            this.log(`验证返回值: ${verifyResult}`, false);
-            
-            // 验证返回1表示成功，其他值表示失败
-            if (verifyResult === '1' || verifyResult === 1 || verifyResult === true) {
-              this.log('\n✅ 签名验证成功！认证通过！', false);
-              this.isVerified = true;
-              this.sendStatusChange();
-              // 触发成功事件，通知父组件
-              this.$emit('auth-success');
-              // 验证成功后停止轮询
-              this.stopDetection();
+            if (this.tempToken && this.username) {
+              try {
+                const response = await fetch('http://localhost:3000/api/verify-usb-key', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    tempToken: this.tempToken,
+                    challenge: randomNum,
+                    signature: signature,
+                    pubKeyX: this.pubKeyX,
+                    pubKeyY: this.pubKeyY,
+                    pinCode: this.pinCode
+                  })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                  this.log('\n✅ 后端验证成功！认证通过！', false);
+                  this.isVerified = true;
+                  this.authStatus = 'success';
+                  this.sendStatusChange();
+                  this.$emit('auth-success', result);
+                  this.stopDetection();
+                } else {
+                  this.log('\n❌ 后端验证失败: ' + (result.message || '未知错误'), true);
+                  this.isVerified = false;
+                  this.authStatus = 'error';
+                  this.sendStatusChange();
+                  this.$emit('auth-failure', new Error(result.message || '后端验证失败'));
+                }
+              } catch (apiError) {
+                this.log(`\n❌ API验证失败: ${apiError.message || '未知错误'}`, true);
+                this.isVerified = false;
+                this.authStatus = 'error';
+                this.sendStatusChange();
+                this.$emit('auth-failure', apiError);
+              }
             } else {
-              this.log('\n❌ 签名验证失败！认证不通过！', true);
-              this.log(`详细返回值: ${verifyResult}`, true);
-              this.log('可能原因: 签名使用的私钥与验证使用的公钥不匹配，或参数顺序不正确', true);
-              this.isVerified = false;
-              this.sendStatusChange();
-              this.$emit('auth-failure', verifyResult);
+              if (verifyResult === '1' || verifyResult === 1 || verifyResult === true) {
+                this.log('\n✅ 本地签名验证成功！认证通过！', false);
+                this.isVerified = true;
+                this.authStatus = 'success';
+                this.sendStatusChange();
+                // 修改为传递验证结果对象，即使是本地验证也提供完整数据
+                this.$emit('auth-success', {
+                  success: true,
+                  deviceVerified: true,
+                  randomNum: randomNum,
+                  signature: signature,
+                  pubKeyX: this.pubKeyX,
+                  pubKeyY: this.pubKeyY
+                });
+                this.stopDetection();
+              } else {
+                this.log('\n❌ 签名验证失败！认证不通过！', true);
+                this.isVerified = false;
+                this.authStatus = 'error';
+                this.sendStatusChange();
+                this.$emit('auth-failure', new Error('签名验证失败'));
+              }
             }
           } catch (verifyError) {
-            this.log(`验证异常: ${verifyError.message}`, true);
-            // 提供备选验证方式 - 打印签名内容供手动验证
-            this.log('\n⚠️  验证失败，提供签名和数据供参考：', true);
-            this.log(`随机数: ${randomNum}`, true);
-            this.log(`签名: ${signature}`, true);
+            this.log(`验证异常: ${verifyError.message || '未知错误'}`, true);
+            this.isVerified = false;
+            this.authStatus = 'error';
+            this.sendStatusChange();
             this.$emit('auth-failure', verifyError);
           }
         } catch (signError) {
-          this.log(`签名失败: ${signError.message}`, true);
+          this.log(`签名失败: ${signError.message || '未知错误'}`, true);
+          this.isVerified = false;
+          this.authStatus = 'error';
+          this.sendStatusChange();
           this.$emit('auth-failure', signError);
         }
-        
-        this.log('\n========== 认证流程结束 ==========', false);
       } catch (error) {
-        this.log(`认证流程错误: ${error.message}`, true);
+        this.log(`认证流程错误: ${error.message || '未知错误'}`, true);
         this.isVerified = false;
+        this.authStatus = 'error';
         this.sendStatusChange();
         this.$emit('auth-failure', error);
       } finally {
@@ -394,37 +452,16 @@ export default {
 }
 
 @keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(82, 196, 26, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(82, 196, 26, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(82, 196, 26, 0); }
 }
 
-.lock-icon {
-  font-size: 40px;
-  color: #f5222d;
-}
+.lock-icon { font-size: 40px; color: #f5222d; }
+.unlock-icon { font-size: 40px; color: #52c41a; }
+.connecting-icon { font-size: 40px; color: #1890ff; animation: spin 1s linear infinite; }
 
-.unlock-icon {
-  font-size: 40px;
-  color: #52c41a;
-}
-
-.connecting-icon {
-  font-size: 40px;
-  color: #1890ff;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 .status-text {
   text-align: left;
@@ -456,24 +493,62 @@ export default {
   font-size: 12px;
 }
 
-.error {
-  color: #d32f2f;
+.error { color: #d32f2f; }
+
+.pin-input-section {
+  margin-top: 20px;
+  padding: 20px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
 }
 
-/* 响应式设计 */
+.pin-input-section label {
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.pin-input {
+  padding: 10px 15px;
+  font-size: 16px;
+  border: 2px solid #d9d9d9;
+  border-radius: 4px;
+  width: 250px;
+  transition: border-color 0.3s;
+}
+
+.pin-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.verify-button {
+  padding: 10px 30px;
+  font-size: 16px;
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.verify-button:hover {
+  background-color: #40a9ff;
+}
+
+.verify-button:active {
+  background-color: #096dd9;
+}
+
 @media (max-width: 768px) {
-  .auth-status {
-    flex-direction: column;
-  }
-  
-  .lock-status {
-    margin-right: 0;
-    margin-bottom: 15px;
-  }
-  
-  .status-text {
-    text-align: center;
-  }
+  .auth-status { flex-direction: column; }
+  .lock-status { margin-right: 0; margin-bottom: 15px; }
+  .status-text { text-align: center; }
+  .pin-input { width: 100%; max-width: 250px; }
 }
-
 </style>

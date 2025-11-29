@@ -13,7 +13,7 @@ router.post('/register', authenticateToken, async (req, res, next) => {
             return next(new AppError('只有管理员可以创建新的管理员账号', 403));
         }
         
-        const { username, password, email } = req.body;
+        const { username, password, email, pinCode, pubKeyX, pubKeyY } = req.body;
         
         // 检查用户名是否已存在
         const existingUser = await db('SELECT * FROM users WHERE username = $1', [username]);
@@ -23,19 +23,43 @@ router.post('/register', authenticateToken, async (req, res, next) => {
         
         // 密码加密
         const hashedPassword = await bcrypt.hash(password, 10);
+        // PIN码加密
+        const hashedPinCode = pinCode ? await bcrypt.hash(pinCode, 10) : null;
         
-        // 创建管理员用户
-        const result = await db(
-            'INSERT INTO users (username, password, email, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, role',
-            [username, hashedPassword, email, 'admin']
-        );
+        // 开始事务
+        await db('BEGIN');
         
-        const user = result.rows[0];
-        res.status(201).json({ 
-            success: true,
-            message: '管理员账号创建成功', 
-            user 
-        });
+        try {
+            // 创建管理员用户
+            const result = await db(
+                'INSERT INTO users (username, password, email, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, role',
+                [username, hashedPassword, email, 'admin']
+            );
+            
+            const user = result.rows[0];
+            
+            // 保存管理员密钥信息（如果提供了）
+            if (pubKeyX && pubKeyY && hashedPinCode) {
+                await db(
+                    'INSERT INTO admin_keys (admin_id, pub_key_x, pub_key_y, pin_code) VALUES ($1, $2, $3, $4)',
+                    [user.id, pubKeyX, pubKeyY, hashedPinCode]
+                );
+            }
+            
+            // 提交事务
+            await db('COMMIT');
+            
+            res.status(201).json({ 
+                success: true,
+                message: '管理员账号创建成功', 
+                user, 
+                hasKeyInfo: !!pubKeyX && !!pubKeyY && !!hashedPinCode
+            });
+        } catch (error) {
+            // 回滚事务
+            await db('ROLLBACK');
+            throw error;
+        }
     } catch (error) {
         next(error);
     }
@@ -297,4 +321,4 @@ router.delete('/users/:id', authenticateToken, async (req, res, next) => {
     }
 });
 
-export default router; 
+export default router;

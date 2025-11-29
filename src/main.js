@@ -14,6 +14,14 @@ import './assets/custom-styles.css'
 axios.interceptors.request.use(
   config => {
     console.log(`发送请求: ${config.method.toUpperCase()} ${config.url}`);
+    
+    // 在请求头中添加时间戳，防止重放攻击
+    // 注意：登录注册接口不需要时间戳
+    if (!config.url.includes('/api/login') && !config.url.includes('/api/register')) {
+      config.headers['x-request-timestamp'] = Date.now().toString();
+      console.log(`添加时间戳: ${config.headers['x-request-timestamp']}`);
+    }
+    
     return config;
   },
   error => {

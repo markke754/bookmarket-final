@@ -7,7 +7,9 @@ export const useAuthStore = defineStore('auth', {
     token: localStorage.getItem('token'),
     user: JSON.parse(localStorage.getItem('user')),
     loading: false,
-    error: null
+    error: null,
+    tempToken: null, // 用于两阶段认证的临时token
+    requiresUsbKey: false // 是否需要USB Key验证
   }),
   
   getters: {
@@ -26,7 +28,15 @@ export const useAuthStore = defineStore('auth', {
       }, 5000);
     },
     
-    async login(username, password, role) {
+    // 重置临时token和USB Key标志
+    resetAuthState() {
+      this.tempToken = null;
+      this.requiresUsbKey = false;
+      this.error = null;
+    },
+    
+    // 第一阶段登录：验证用户名密码
+    async firstStageLogin(username, password, role) {
       this.loading = true;
       this.error = null;
       
@@ -38,24 +48,33 @@ export const useAuthStore = defineStore('auth', {
         
         const data = response.data;
         
-        // 验证用户角色是否匹配
-        if (data.user.role !== role) {
-          this.setError(`登录失败: 您不是${role === 'buyer' ? '买家' : role === 'seller' ? '卖家' : '管理员'}`);
-          this.loading = false;  // 确保在返回前重置loading状态
-          return false;
+        // 检查是否需要USB Key验证（管理员）
+        if (data.requiresUsbKey && data.tempToken) {
+          // 需要USB Key验证，存储临时token并返回
+          this.tempToken = data.tempToken;
+          this.requiresUsbKey = true;
+          return { 
+            success: true, 
+            requiresUsbKey: true,
+            tempToken: data.tempToken,
+            username: username,
+            role: role,
+            hasKeyInfo: data.hasKeyInfo || false,
+            pubKeyX: data.pubKeyX || '',
+            pubKeyY: data.pubKeyY || ''
+          };
+        } else {
+          // 验证用户角色是否匹配
+          if (data.user.role !== role) {
+            this.setError(`登录失败: 您不是${role === 'buyer' ? '买家' : role === 'seller' ? '卖家' : '管理员'}`);
+            this.loading = false;
+            return { success: false, error: this.error };
+          }
+          
+          // 不需要USB Key验证，直接完成登录
+          const loginSuccess = this.completeLogin(data);
+          return { success: loginSuccess };
         }
-        
-        this.token = data.token;
-        this.user = data.user;
-        
-        localStorage.setItem('token', this.token);
-        localStorage.setItem('user', JSON.stringify(this.user));
-        
-        // 配置全局axios默认头部
-        this.setAxiosDefaultHeader();
-        
-        this.loading = false;  // 确保在成功返回前重置loading状态
-        return true;
       } catch (error) {
         console.error('登录失败:', error);
         
@@ -71,12 +90,93 @@ export const useAuthStore = defineStore('auth', {
           this.setError(`登录失败: ${error.message}`);
         }
         
-        this.loading = false;  // 确保在失败返回前重置loading状态
-        return false;
+        this.loading = false;
+        return { success: false, error: this.error };
       } finally {
-        // 确保无论如何都重置loading状态
         this.loading = false;
       }
+    },
+    
+    // 第二阶段登录：验证USB Key
+    async verifyUsbKey(authData) {
+      this.loading = true;
+      this.error = null;
+      
+      try {
+        // 添加空值检查，防止访问undefined属性
+        if (!authData) {
+          throw new Error('USB Key验证失败，未收到有效的认证信息');
+        }
+        
+        // 检查是否是本地验证（只有deviceVerified，没有token和user）
+        if (authData.deviceVerified && !authData.token && !authData.user) {
+          // 本地验证成功，模拟完成登录
+          console.log('本地USB Key验证成功');
+          
+          // 这里我们假设有一个默认的管理员角色，因为没有实际的后端验证
+          // 实际项目中可能需要根据USB Key的信息查询用户
+          this.user = {
+            id: 'admin',
+            username: 'admin',
+            role: 'admin'
+          };
+          
+          // 生成一个临时token用于本地认证
+          this.token = 'local-usb-key-verified-token-' + Date.now();
+          
+          // 保存到localStorage
+          localStorage.setItem('token', this.token);
+          localStorage.setItem('user', JSON.stringify(this.user));
+          
+          // 配置axios头部
+          this.setAxiosDefaultHeader();
+          
+          this.loading = false;
+          return { success: true };
+        }
+        
+        // 检查是否包含token和user属性（后端验证情况）
+        if (!authData.token || !authData.user) {
+          // 如果没有直接的token和user，可能authData本身就是后端返回的结果
+          if (authData.success && authData.token && authData.user) {
+            // 已经是正确格式
+            return this.completeLogin(authData);
+          } else {
+            throw new Error('USB Key验证失败，认证信息不完整');
+          }
+        }
+        
+        // 数据格式正确，完成登录
+        return this.completeLogin(authData);
+      } catch (error) {
+        this.error = error.message || 'USB Key验证失败';
+        return { success: false, error: this.error };
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    // 完成登录流程
+    completeLogin(authData) {
+      // 添加空值检查
+      if (!authData || !authData.token || !authData.user) {
+        console.error('登录失败: 认证信息不完整');
+        this.error = '登录失败: 认证信息不完整';
+        return false;
+      }
+      
+      this.token = authData.token;
+      this.user = authData.user;
+      this.tempToken = null; // 清除临时token
+      this.requiresUsbKey = false; // 清除USB Key验证标志
+      
+      localStorage.setItem('token', this.token);
+      localStorage.setItem('user', JSON.stringify(this.user));
+      
+      // 配置全局axios默认头部
+      this.setAxiosDefaultHeader();
+      
+      return true;
     },
     
     async register(userData) {
@@ -118,6 +218,8 @@ export const useAuthStore = defineStore('auth', {
     logout() {
       this.token = null;
       this.user = null;
+      this.tempToken = null;
+      this.requiresUsbKey = false;
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       
@@ -130,6 +232,9 @@ export const useAuthStore = defineStore('auth', {
     
     // 自动恢复会话（如果有存储的token）
     autoLogin() {
+      // 重置临时认证状态
+      this.resetAuthState();
+      
       if (this.token && this.user) {
         // 验证用户信息完整性
         if (!this.user.role) {
